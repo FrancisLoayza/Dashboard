@@ -10,7 +10,7 @@ export default function SelectorUI() {
     
     const handleChange = (event: SelectChangeEvent<string>) => {
         setCityInput(event.target.value)
-        alert(event.target.value)
+        
     };
 return (
    <FormControl fullWidth>
