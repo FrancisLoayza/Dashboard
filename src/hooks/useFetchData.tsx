@@ -9,32 +9,48 @@ const CITY_COORDS: Record<string, { latitude: number; longitude: number }> = {
   Manta: { latitude: -0.9621, longitude: -80.7127 },
 };
 
-export default function useFetchData(selectedOption: string | null) : OpenMeteoResponse | undefined {
-    
-    const [data,setData]=useState<OpenMeteoResponse>();
+interface UseFetchDataResult {
+    data?: OpenMeteoResponse;
+    loading: boolean;
+    error: string;
+}
 
-    useEffect(()=>{
+export default function useFetchData(selectedOption: string | null): UseFetchDataResult {
+    const [data, setData] = useState<OpenMeteoResponse | undefined>(undefined);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
         const normalizedOption = selectedOption
             ? selectedOption.charAt(0).toUpperCase() + selectedOption.slice(1).toLowerCase()
             : 'Guayaquil';
 
         const cityConfig = CITY_COORDS[normalizedOption] ?? CITY_COORDS['Guayaquil'];
         const URL = `https://api.open-meteo.com/v1/forecast?latitude=${cityConfig.latitude}&longitude=${cityConfig.longitude}&hourly=temperature_2m,wind_speed_10m&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m`;
-        const fetchData= async()=>{
+
+        const fetchData = async () => {
+            setLoading(true);
+            setError('');
+
             try {
                 const response = await fetch(URL);
                 if (!response.ok) {
                     throw new Error(`Error ${response.status}: ${response.statusText}`);
                 }
-                const jsonData: OpenMeteoResponse= await response.json();
+
+                const jsonData: OpenMeteoResponse = await response.json();
                 setData(jsonData);
-            } catch (error) {
-                console.error('Error fetching weather data:', error);
+            } catch (fetchError) {
+                console.error('Error fetching weather data:', fetchError);
+                setError(fetchError instanceof Error ? fetchError.message : String(fetchError));
+                setData(undefined);
+            } finally {
+                setLoading(false);
             }
         };
+
         fetchData();
+    }, [selectedOption]);
 
-    },[selectedOption]);
-
-    return data;
+    return { data, loading, error };
 }
